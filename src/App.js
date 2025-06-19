@@ -11,13 +11,23 @@ import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import useErrorHandler from './hooks/useErrorHandler';
-import ApiHealthChecker from './components/ApiHealthChecker';
+import ApiHealthChecker from './components/ApiHealthChecker'
 import localStorageService from './services/localStorageService';
 import toast from 'react-hot-toast';
 import WelcomeModal from './components/WelcomeModal';
 import ScrollToTop from './components/ScrollToTop';
 import BackToTopButton from './components/BackToTopButton';
 import { shouldShowWelcomeModal } from './utils/userUtils';
+
+// Polyfill for Promise.allSettled for older browsers
+if (!Promise.allSettled) {
+  Promise.allSettled = function(promises) {
+    return Promise.all(promises.map(p => Promise.resolve(p).then(
+      value => ({ status: 'fulfilled', value }),
+      reason => ({ status: 'rejected', reason })
+    )));
+  };
+}
 
 function App() {
   const dispatch = useDispatch()
@@ -36,14 +46,14 @@ function App() {
     console.group('🔍 API Setup Validation')
     console.log('Environment:', process.env.NODE_ENV)
     console.log('API Token exists:', !!token)
-    console.log('API Token length:', token?.length || 0)
+    console.log('API Token length:', token ? token.length : 0)
     console.log('Axios base URL:', axios.defaults.baseURL)
     console.log('Axios default headers:', axios.defaults.headers.common)
     console.groupEnd()
     
     setDebugInfo({
       hasToken: !!token,
-      tokenLength: token?.length || 0,
+      tokenLength: token ? token.length : 0,
       nodeEnv: process.env.NODE_ENV,
       baseUrl: axios.defaults.baseURL
     })
@@ -67,9 +77,9 @@ function App() {
     } catch (error) {
         console.error("❌ Trending data error:", error)
         console.error("Error details:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
+          status: error.response ? error.response.status : undefined,
+          statusText: error.response ? error.response.statusText : undefined,
+          data: error.response ? error.response.data : undefined,
           message: error.message
         })
         handleApiError(error, 'Failed to load trending content')
@@ -81,10 +91,7 @@ function App() {
     try {
         console.log('🚀 Fetching TMDB configuration...')
         const response = await axios.get("/configuration", {
-          timeout: 15000,
-          headers: {
-            'Authorization': `Bearer ${process.env.REACT_APP_ACCESS_TOKEN}`,
-          }
+          timeout: 15000
         })
         
         console.log('✅ Configuration response:', response.data)
@@ -93,9 +100,9 @@ function App() {
     } catch (error) {
         console.error("❌ Configuration error:", error)
         console.error("Error details:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
+          status: error.response ? error.response.status : undefined,
+          statusText: error.response ? error.response.statusText : undefined,
+          data: error.response ? error.response.data : undefined,
           message: error.message
         })
         handleApiError(error, 'Failed to load configuration')
@@ -173,16 +180,17 @@ function App() {
       setApiHealth(isHealthy)
       
       if (!isHealthy) {
-        throw new Error('TMDB API is not accessible. Please check your internet connection and API token.')
+        throw new Error('TMDB API is not accessible in your browser. Please use chrome.')
       }
       
       console.log('🔄 Running initialization requests...')
       
-      // Run both requests concurrently with individual error handling
-      const [trendingResult, configResult] = await Promise.allSettled([
-        fetchTrendingData(),
-    fetchConfiguration()
-      ])
+      // Run both requests concurrently with cross-browser compatible Promise handling
+      const promises = [fetchTrendingData(), fetchConfiguration()]
+      const results = await Promise.allSettled(promises)
+      
+      const trendingResult = results[0]
+      const configResult = results[1]
 
       console.log('📊 Initialization results:', {
         trending: trendingResult,

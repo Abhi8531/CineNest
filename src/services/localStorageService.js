@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 // Local storage service with IP-based user identification
 class LocalStorageService {
   constructor() {
@@ -6,20 +8,25 @@ class LocalStorageService {
     this.initializeIP();
   }
 
-  // Get user's IP address using a public API
+  // Get user's IP address using a public API with axios for better compatibility
   async initializeIP() {
     try {
-      // Try multiple IP services for reliability
+      // Try multiple IP services for reliability using axios
       const ipServices = [
         'https://api.ipify.org?format=json',
-        'https://ipapi.co/json/',
-        'https://httpbin.org/ip'
+        'https://httpbin.org/ip',
+        'https://api.myip.com'
       ];
 
       for (const service of ipServices) {
         try {
-          const response = await fetch(service);
-          const data = await response.json();
+          const response = await axios.get(service, {
+            timeout: 5000,
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          const data = response.data;
           
           // Extract IP from different response formats
           this.ipAddress = data.ip || data.origin || data.query;
@@ -29,7 +36,7 @@ class LocalStorageService {
             break;
           }
         } catch (error) {
-          console.warn('⚠️ IP service failed:', service, error);
+          console.warn('⚠️ IP service failed:', service, error.message);
         }
       }
 
@@ -44,31 +51,38 @@ class LocalStorageService {
     }
   }
 
-  // Generate a browser fingerprint as IP fallback
+  // Generate a browser fingerprint as IP fallback with better cross-browser support
   generateBrowserFingerprint() {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('Browser fingerprint', 2, 2);
-    
-    const fingerprint = [
-      navigator.userAgent,
-      navigator.language,
-      window.screen.width + 'x' + window.screen.height,
-      new Date().getTimezoneOffset(),
-      canvas.toDataURL()
-    ].join('|');
-    
-    // Simple hash function
-    let hash = 0;
-    for (let i = 0; i < fingerprint.length; i++) {
-      const char = fingerprint.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('Browser fingerprint', 2, 2);
+      }
+      
+      const fingerprint = [
+        navigator.userAgent || 'unknown',
+        navigator.language || 'unknown',
+        (window.screen.width || 0) + 'x' + (window.screen.height || 0),
+        new Date().getTimezoneOffset() || 0,
+        ctx ? canvas.toDataURL() : 'no-canvas'
+      ].join('|');
+      
+      // Simple hash function
+      let hash = 0;
+      for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      
+      return 'fp_' + Math.abs(hash).toString(36);
+    } catch (error) {
+      console.warn('⚠️ Fingerprint generation failed, using fallback');
+      return 'fp_' + Math.random().toString(36).substr(2, 9);
     }
-    
-    return 'fp_' + Math.abs(hash).toString(36);
   }
 
   // Get storage key based on IP address

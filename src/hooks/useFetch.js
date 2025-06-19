@@ -23,16 +23,10 @@ const useFetch = (endpoint, options = {}) => {
         try {
             console.log(`🚀 Fetching data from: ${endpoint} (attempt ${attempt + 1})`)
             
-            // Check if API token exists
-            if (!process.env.REACT_APP_ACCESS_TOKEN) {
-                throw new Error('TMDB API token is not configured. Please check your environment variables.')
-            }
-            
             // Create axios request with enhanced configuration
             const requestConfig = {
                 timeout: 15000, // 15 second timeout
                 headers: {
-                    'Authorization': `Bearer ${process.env.REACT_APP_ACCESS_TOKEN}`,
                     'Content-Type': 'application/json',
                 },
                 params: options.params || {},
@@ -58,11 +52,11 @@ const useFetch = (endpoint, options = {}) => {
         } catch (err) {
             console.error(`❌ Fetch error (attempt ${attempt + 1}/${maxRetries}):`, err)
             
-            // Enhanced error classification
+            // Enhanced error classification with safe property access
             const isNetworkError = err.code === 'NETWORK_ERROR' || 
                                  err.code === 'ECONNABORTED' || 
-                                 err.message?.includes('Network Error') ||
-                                 err.message?.includes('timeout')
+                                 (err.message && err.message.includes('Network Error')) ||
+                                 (err.message && err.message.includes('timeout'))
             
             const isServerError = err.response && err.response.status >= 500
             const isRetryableError = isNetworkError || isServerError
@@ -134,7 +128,7 @@ const useFetch = (endpoint, options = {}) => {
         console.log(`📊 useFetch state for ${endpoint}:`, {
             dataLength: data.length,
             loading,
-            error: error?.message,
+            error: error && error.message ? error.message : null,
             retryCount
         })
     }, [endpoint, data, loading, error, retryCount])

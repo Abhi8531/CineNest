@@ -2,10 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#8b5cf6" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Favicon setup -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.svg" />
+
+    <!-- DNS prefetch for better performance -->
+    <link rel="dns-prefetch" href="//api.themoviedb.org" />
+    <link rel="dns-prefetch" href="//image.tmdb.org" />
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <meta
       name="description"
       content="CineNest - Your Ultimate Cinema Discovery Platform. Discover movies and TV shows with personalized recommendations, watchlists, and collections."
@@ -16,6 +27,31 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Polyfills for older browsers -->
+    <script>
+      // Promise polyfill for IE
+      if (!window.Promise) {
+        document.write(
+          '<script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"><\/script>'
+        );
+      }
+
+      // Fetch polyfill for IE
+      if (!window.fetch) {
+        document.write(
+          '<script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.17/dist/fetch.umd.js"><\/script>'
+        );
+      }
+
+      // Object.assign polyfill for IE
+      if (!Object.assign) {
+        document.write(
+          '<script src="https://cdn.jsdelivr.net/npm/object-assign@4.1.1/index.js"><\/script>'
+        );
+      }
+    </script>
+
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

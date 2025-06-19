@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { createCollection, removeFromCollection } from '../store/CineSlice'
 import { Link } from 'react-router-dom'
@@ -16,6 +16,14 @@ const CollectionsPage = () => {
     const [newCollectionName, setNewCollectionName] = useState('')
     const [newCollectionDescription, setNewCollectionDescription] = useState('')
     const [selectedCollection, setSelectedCollection] = useState(null)
+
+    // Update selectedCollection when collections change
+    useEffect(() => {
+        if (selectedCollection) {
+            const updatedCollection = collections.find(c => c.id === selectedCollection.id)
+            setSelectedCollection(updatedCollection)
+        }
+    }, [collections, selectedCollection])
 
     const handleCreateCollection = (e) => {
         e.preventDefault()
@@ -73,18 +81,16 @@ const CollectionsPage = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {collections.map((collection) => (
-                            <div 
+                            <div
                                 key={collection.id}
-                                className={`rounded-xl overflow-hidden transition-all duration-200 hover:scale-105 cursor-pointer ${
-                                    theme === 'dark' 
-                                        ? 'bg-gray-800 border border-gray-700 hover:border-purple-500' 
-                                        : 'bg-white border border-gray-200 hover:border-purple-500 hover:shadow-lg'
-                                } shadow-lg`}
+                                className={`rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer group ${
+                                    theme === 'dark' ? 'bg-gray-800 hover:bg-gray-750' : 'bg-white hover:shadow-lg'
+                                }`}
                                 onClick={() => setSelectedCollection(collection)}
                             >
-                                {/* Collection Preview */}
+                                {/* Collection Thumbnail */}
                                 <div className="h-32 bg-gradient-to-br from-purple-500 to-pink-500 relative overflow-hidden">
                                     {collection.movies.length > 0 ? (
                                         <div className="grid grid-cols-3 h-full">
@@ -106,7 +112,7 @@ const CollectionsPage = () => {
                                 </div>
 
                                 {/* Collection Info */}
-                                <div className="p-6">
+                                <div className="p-4">
                                     <h3 className={`font-bold text-lg mb-2 ${
                                         theme === 'dark' ? 'text-white' : 'text-gray-900'
                                     }`}>
@@ -123,19 +129,22 @@ const CollectionsPage = () => {
                                         }`}>
                                             {collection.movies.length} {collection.movies.length === 1 ? 'movie' : 'movies'}
                                         </span>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    // Edit functionality can be added here
-                                                }}
-                                                className={`p-1 rounded transition-colors hover:bg-purple-500/10 ${
-                                                    theme === 'dark' ? 'text-gray-400 hover:text-purple-400' : 'text-gray-600 hover:text-purple-600'
-                                                }`}
-                                            >
-                                                <MdEdit size={16} />
-                                            </button>
-                                        </div>
+                                        
+                                        {/* Edit Collection Button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                // TODO: Implement edit functionality
+                                                toast.info('Edit feature coming soon!')
+                                            }}
+                                            className={`p-1 rounded transition-colors ${
+                                                theme === 'dark' 
+                                                    ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <MdEdit size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -149,22 +158,26 @@ const CollectionsPage = () => {
                         <div className={`w-full max-w-md rounded-xl p-6 ${
                             theme === 'dark' ? 'bg-gray-800' : 'bg-white'
                         }`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className={`text-xl font-bold ${
+                                    theme === 'dark' ? 'text-white' : 'text-gray-900'
+                                }`}>
                                     Create New Collection
                                 </h2>
                                 <button
                                     onClick={() => setShowCreateModal(false)}
-                                    className={`p-1 rounded transition-colors hover:bg-gray-500/10 ${
-                                        theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                                    className={`p-2 rounded-full transition-colors ${
+                                        theme === 'dark' 
+                                            ? 'hover:bg-gray-700 text-gray-400 hover:text-white' 
+                                            : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
                                     }`}
                                 >
                                     <FiX size={20} />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateCollection}>
-                                <div className="mb-4">
+                            <form onSubmit={handleCreateCollection} className="space-y-4">
+                                <div>
                                     <label className={`block text-sm font-medium mb-2 ${
                                         theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                                     }`}>
@@ -174,36 +187,36 @@ const CollectionsPage = () => {
                                         type="text"
                                         value={newCollectionName}
                                         onChange={(e) => setNewCollectionName(e.target.value)}
-                                        placeholder="e.g., Weekend Favorites"
-                                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                                        placeholder="e.g., Marvel Movies"
+                                        className={`w-full px-4 py-2 rounded-lg border transition-colors ${
                                             theme === 'dark' 
-                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                                                : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                        }`}
+                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500' 
+                                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                                        } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
                                         required
                                     />
                                 </div>
 
-                                <div className="mb-6">
+                                <div>
                                     <label className={`block text-sm font-medium mb-2 ${
                                         theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                                     }`}>
-                                        Description (optional)
+                                        Description (Optional)
                                     </label>
                                     <textarea
                                         value={newCollectionDescription}
                                         onChange={(e) => setNewCollectionDescription(e.target.value)}
                                         placeholder="Describe your collection..."
                                         rows={3}
-                                        className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                                        className={`w-full px-4 py-2 rounded-lg border transition-colors resize-none ${
                                             theme === 'dark' 
-                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                                                : 'bg-white border-gray-300 text-black placeholder-gray-500'
-                                        }`}
+                                                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500' 
+                                                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                                        } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
                                     />
                                 </div>
 
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 pt-4">
                                     <button
                                         type="button"
                                         onClick={() => setShowCreateModal(false)}
@@ -219,7 +232,7 @@ const CollectionsPage = () => {
                                         type="submit"
                                         className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
                                     >
-                                        Create
+                                        Create Collection
                                     </button>
                                 </div>
                             </form>

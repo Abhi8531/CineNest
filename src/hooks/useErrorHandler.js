@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
+import API_CONFIG from '../config/api'
 
 const useErrorHandler = () => {
     // Enhanced error handler with network-specific handling
@@ -68,6 +70,86 @@ const useErrorHandler = () => {
             canRetry: true
         }
     }, [])
+
+    const classifyError = (error) => {
+        // Network connectivity issues
+        if (error && (error.code === 'NETWORK_ERROR' || (error.message && error.message.includes('Network Error')))) {
+            return {
+                type: 'network',
+                title: '🌐 Network Error',
+                message: 'Please check your internet connection and try again.',
+                action: 'retry'
+            }
+        }
+
+        // Request timeout
+        if (error && (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout')))) {
+            return {
+                type: 'timeout',
+                title: '⏰ Request Timeout',
+                message: 'The request took too long. Please try again.',
+                action: 'retry'
+            }
+        }
+
+        // Authentication errors
+        if (error && error.response && error.response.status === 401) {
+            return {
+                type: 'auth',
+                title: '🔑 Authentication Error',
+                message: 'Invalid API token. Please check your configuration.',
+                action: 'config'
+            }
+        }
+
+        // Rate limiting
+        if (error && error.response && error.response.status === 429) {
+            return {
+                type: 'rate_limit',
+                title: '🚦 Rate Limited',
+                message: 'Too many requests. Please wait a moment and try again.',
+                action: 'wait'
+            }
+        }
+
+        // Server errors
+        if (error && error.response && error.response.status >= 500) {
+            return {
+                type: 'server',
+                title: '🔧 Server Error',
+                message: 'The server is experiencing issues. Please try again later.',
+                action: 'retry'
+            }
+        }
+
+        // Not found errors
+        if (error && error.response && error.response.status === 404) {
+            return {
+                type: 'not_found',
+                title: '🔍 Not Found',
+                message: 'The requested content was not found.',
+                action: 'none'
+            }
+        }
+
+        // CORS errors
+        if (error && error.response && error.response.status === 0) {
+            return {
+                type: 'cors',
+                title: '🚫 Connection Error',
+                message: 'Unable to connect to the API. This may be a browser compatibility issue.',
+                action: 'retry'
+            }
+        }
+
+        // Generic error
+        return {
+            type: 'generic',
+            title: '⚠️ Something went wrong',
+            message: error && error.message ? error.message : 'An unexpected error occurred.',
+            action: 'retry'
+        }
+    }
 
     // Enhanced API error handler with better user feedback
     const handleApiError = useCallback((error, fallbackMessage = 'Failed to load data') => {
@@ -222,34 +304,52 @@ const useErrorHandler = () => {
         })
     }, [])
 
-    // Check API health
-    const checkApiHealth = useCallback(async () => {
+    // Enhanced health check for API connectivity with multiple fallback methods
+    const checkApiHealth = async () => {
         try {
-            const response = await fetch('https://api.themoviedb.org/3/configuration', {
-                headers: {
-                    'Authorization': `Bearer ${process.env.REACT_APP_ACCESS_TOKEN}`,
-                },
-            })
+            console.log('🏥 Checking TMDB API health with multiple methods...')
             
-            if (!response.ok) {
-                throw new Error(`API Health Check Failed: ${response.status} ${response.statusText}`)
+            // Use the enhanced API configuration test
+            const result = await API_CONFIG.testConnection()
+            
+            if (result.success) {
+                console.log(`✅ API health check passed using method ${result.method}`)
+                return true
+            } else {
+                console.warn('⚠️ All API connection methods failed:', result.error)
+                
+                // Try one more basic method as final fallback
+                try {
+                    const basicResponse = await axios.get('https://api.themoviedb.org/3/configuration', {
+                        timeout: 5000,
+                        headers: {
+                            'Authorization': `Bearer ${API_CONFIG.ACCESS_TOKEN}`
+                        }
+                    })
+                    
+                    if (basicResponse.status === 200) {
+                        console.log('✅ Basic API health check passed as fallback')
+                        return true
+                    }
+                } catch (basicError) {
+                    console.error('❌ Basic fallback also failed:', basicError.message)
+                }
+                
+                return false
             }
-            
-            console.log('✅ TMDB API is healthy')
-            return true
         } catch (error) {
-            console.error('🔴 TMDB API health check failed:', error)
-            createErrorToast('TMDB API is currently unavailable', 'error')
+            console.error('❌ API health check error:', error.message || error)
             return false
         }
-    }, [createErrorToast])
+    }
 
     return {
         handleError,
         handleApiError,
         handleAsyncError,
         createErrorToast,
-        checkApiHealth
+        checkApiHealth,
+        classifyError
     }
 }
 

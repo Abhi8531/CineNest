@@ -2,11 +2,10 @@ import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { addToWatchlist, removeFromWatchlist, addToFavorites, removeFromFavorites, updateViewingHistory } from '../store/CineSlice'
 import { MdWatchLater, MdFavorite, MdFavoriteBorder, MdCheck } from 'react-icons/md'
-import { BiPlay, BiCollection } from 'react-icons/bi'
+import { BiPlay } from 'react-icons/bi'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import CollectionSelectModal from './CollectionSelectModal'
 
 const Card = ({ data, trending, index, media_type }) => {
     const dispatch = useDispatch()
@@ -16,7 +15,7 @@ const Card = ({ data, trending, index, media_type }) => {
     const theme = useSelector(state => state.cineNest.theme)
     
     const [showActions, setShowActions] = useState(false)
-    const [showCollectionModal, setShowCollectionModal] = useState(false)
+    const [isClicked, setIsClicked] = useState(false)
     
     const mediaType = data.media_type ?? media_type
     const isInWatchlist = watchlist.find(item => item.id === data.id)
@@ -49,13 +48,10 @@ const Card = ({ data, trending, index, media_type }) => {
     }
 
     const handleCardClick = () => {
+        setIsClicked(true)
         dispatch(updateViewingHistory({ ...data, media_type: mediaType }))
-    }
-
-    const handleCollectionClick = (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setShowCollectionModal(true)
+        // Reset click state after navigation
+        setTimeout(() => setIsClicked(false), 100)
     }
 
     return (
@@ -100,58 +96,18 @@ const Card = ({ data, trending, index, media_type }) => {
             </div>
 
             {/* Trending Badge */}
-            <div className='absolute top-3 left-0'>
-                {trending && (
-                    <div className='py-1.5 px-3 backdrop-blur-md rounded-r-full bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium text-sm shadow-lg'>
-                        #{index} Trending 🔥
+            {trending && (
+                <div className="absolute top-3 right-3 z-10">
+                    <div className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">
+                        #{index + 1}
                     </div>
-                )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className={`absolute top-3 right-3 flex flex-col gap-2 transition-all duration-300 ${
-                showActions ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-            }`}>
-                {/* Watchlist Button */}
-                <button
-                    onClick={handleWatchlistToggle}
-                    className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 ${
-                        isInWatchlist 
-                            ? 'bg-purple-500/90 text-white' 
-                            : 'bg-black/60 text-white hover:bg-purple-500/90'
-                    }`}
-                    title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
-                >
-                    {isInWatchlist ? <MdCheck size={16} /> : <MdWatchLater size={16} />}
-                </button>
-
-                {/* Favorite Button */}
-                <button
-                    onClick={handleFavoriteToggle}
-                    className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 ${
-                        isFavorite 
-                            ? 'bg-red-500/90 text-white' 
-                            : 'bg-black/60 text-white hover:bg-red-500/90'
-                    }`}
-                    title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                    {isFavorite ? <MdFavorite size={16} /> : <MdFavoriteBorder size={16} />}
-                </button>
-
-                {/* Collection Button */}
-                <button
-                    onClick={handleCollectionClick}
-                    className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 bg-black/60 text-white hover:bg-purple-500/90`}
-                    title="Add to collection"
-                >
-                    <BiCollection size={16} />
-                </button>
-            </div>
+                </div>
+            )}
 
             {/* Rating Badge */}
             {data.vote_average && (
-                <div className="absolute top-3 left-3">
-                    <div className={`px-2 py-1 rounded-full text-xs font-semibold backdrop-blur-md ${
+                <div className="absolute bottom-20 left-3 z-10">
+                    <div className={`px-2 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-lg ${
                         data.vote_average >= 8 
                             ? 'bg-green-500/90 text-white'
                             : data.vote_average >= 6
@@ -163,8 +119,41 @@ const Card = ({ data, trending, index, media_type }) => {
                 </div>
             )}
 
+            {/* Action Buttons - Always positioned consistently */}
+            <div className="absolute top-3 left-3 z-20">
+                <div className={`flex flex-col gap-2 transition-all duration-300 ${
+                    showActions || isClicked ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+                }`}>
+                    {/* Watchlist Button */}
+                    <button
+                        onClick={handleWatchlistToggle}
+                        className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 shadow-lg ${
+                            isInWatchlist 
+                                ? 'bg-purple-500/90 text-white' 
+                                : 'bg-black/60 text-white hover:bg-purple-500/90'
+                        }`}
+                        title={isInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+                    >
+                        {isInWatchlist ? <MdCheck size={16} /> : <MdWatchLater size={16} />}
+                    </button>
+
+                    {/* Favorite Button */}
+                    <button
+                        onClick={handleFavoriteToggle}
+                        className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 shadow-lg ${
+                            isFavorite 
+                                ? 'bg-red-500/90 text-white' 
+                                : 'bg-black/60 text-white hover:bg-red-500/90'
+                        }`}
+                        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                        {isFavorite ? <MdFavorite size={16} /> : <MdFavoriteBorder size={16} />}
+                    </button>
+                </div>
+            </div>
+
             {/* Movie Info */}
-            <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-8'>
+            <div className='absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent z-10'>
                 <h2 className='text-white text-lg font-bold line-clamp-2 mb-1 group-hover:text-purple-300 transition-colors'>
                     {data?.title || data?.name}
                 </h2>
@@ -191,13 +180,6 @@ const Card = ({ data, trending, index, media_type }) => {
                     </p>
                 )}
             </div>
-
-            {/* Collection Modal */}
-            <CollectionSelectModal 
-                isOpen={showCollectionModal}
-                onClose={() => setShowCollectionModal(false)}
-                movie={{ ...data, media_type: mediaType }}
-            />
         </Link>
     )
 }
